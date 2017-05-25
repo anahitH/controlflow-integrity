@@ -32,31 +32,17 @@ namespace {
 
     virtual bool runOnFunction(Function &F) {
       // Check if function is protected
-      if (F.hasFnAttribute("protected")) {
-        errs() << "found Protected\n";
+      if (!F.hasFnAttribute("protected")) {
+        errs() << "Not Protected\n";
+        return false;
       }
+      errs() << "Protected\n";
 
       // Get the function to call from our runtime library.
       LLVMContext &Ctx = F.getContext();
       Constant *checkFunc = F.getParent()->getOrInsertFunction(
         "check", Type::getVoidTy(Ctx), NULL
       );
-
-      /*for (auto &B : F) {
-        for (auto &I : B) {
-          if (auto *op = dyn_cast<BinaryOperator>(&I)) {
-            // Insert *after* `op`.
-            IRBuilder<> builder(op);
-            builder.SetInsertPoint(&B, ++builder.GetInsertPoint());
-
-            // Insert a call to our function.
-            Value* args[] = {op};
-            builder.CreateCall(logFunc, args);
-
-            return true;
-          }
-        }
-      }*/
 
       BasicBlock &bb = F.getEntryBlock();
       IRBuilder<> builder(&bb);
