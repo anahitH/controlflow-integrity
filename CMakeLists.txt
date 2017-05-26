@@ -10,5 +10,4 @@ link_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
-add_subdirectory(Analysis)  # Use your pass name here.
-add_subdirectory(skeleton)  # Use your pass name here.
+add_subdirectory(src)  # Use your pass name here.

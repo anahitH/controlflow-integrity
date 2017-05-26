@@ -1,5 +1,4 @@
 #include "llvm/Pass.h"
-#include "llvm/Analysis/CallGraphSCCPass.h"
 
 #include <list>
 #include <memory>
@@ -16,7 +15,7 @@ class Function;
 
 namespace cf_integrity
 {
-class CallPathsAnalysisPass : public llvm::CallGraphSCCPass
+class CallPathsAnalysisPass : public llvm::ModulePass
 {
 public:
     using CallPath = std::list<llvm::Function*>;
@@ -51,28 +50,27 @@ public:
     CallPathsAnalysisPass();
 
 public:
-    void set_sensitive_functions(const std::vector<std::string>& function_names);
-
-public:
-    bool doInitialization(llvm::CallGraph &CG)override;
-    bool doFinalization(llvm::CallGraph &CG) override;
-    bool runOnSCC(llvm::CallGraphSCC& SCC) override;
+    bool doFinalization(llvm::Module &M) override;
+    bool runOnModule(llvm::Module& M) override;
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 
     void dump();
 
 private:
+    void collect_sensitive_functions(llvm::Module& M);
     bool is_sensitive(llvm::Function* F) const;
-    void add_new_sensitive_functions(llvm::Function* F);
-    void flatten_path(llvm::Function* F);
+    void flatten_paths();
+    void compute_hashes();
+    size_t compute_hash(const CallPath& path) const;
     void dump(CallPaths paths) const;
 
 private:
-    std::unordered_set<std::string> sensitive_function_names;
     std::unordered_map<llvm::Function*, node_type> sensitive_functions;
     std::unordered_map<llvm::Function*, CallPaths> flattened_paths;
 
     std::unordered_map<llvm::Function*, node_type> intermediate_sensitive_functions;
+    using hash_set = std::unordered_set<size_t>;
+    std::unordered_map<llvm::Function*, hash_set> path_hashes;
 
 };
 } // cf_integrity

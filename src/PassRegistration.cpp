@@ -3,14 +3,16 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "CallPathsAnalysisPass.h"
+#include "ControlFlowIntegrityCheckerPass.h"
+#include "FunctionsAnnotatorPass.h"
 
 namespace cf_integrity {
 
 static void registerPathsAnalysisPass(const llvm::PassManagerBuilder &,
                          	      llvm::legacy::PassManagerBase &PM) {
-  CallPathsAnalysisPass* pathsAnalysisPass = new CallPathsAnalysisPass();
-  pathsAnalysisPass->set_sensitive_functions(std::vector<std::string>{"dummy", "test"});
-  PM.add(pathsAnalysisPass);
+  //PM.add(new CallPathsAnalysisPass());
+  PM.add(new ControlFlowIntegrityCheckerPass());
+  PM.add(new FunctionsAnnotatorPass());
 }
 
 static llvm::RegisterStandardPasses RegisterMyPass(llvm::PassManagerBuilder::EP_EarlyAsPossible, registerPathsAnalysisPass);

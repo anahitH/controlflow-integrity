@@ -1,6 +1,9 @@
 add_library(controlflow-integrity MODULE
     CallPathsAnalysisPass.cpp
+    ControlFlowIntegrityCheckerPass.cpp
+    FunctionsAnnotatorPass.cpp
     TestModulePass.cpp
+    PassRegistration.cpp
 )
 
 # Use C++11 to compile our pass (i.e., supply -std=c++11).
