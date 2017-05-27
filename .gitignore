@@ -1,2 +1,7 @@
 build
-Analysis/*.swp
+Analysis/.*.swp
+test/.*.swp
+test/*.ll
+test/*.bc
+checkers/*.bc
+checkers/*.ll

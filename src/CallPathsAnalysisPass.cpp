@@ -12,6 +12,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
+#include <boost/functional/hash.hpp>
 #include <cxxabi.h>
 
 namespace cf_integrity {
@@ -28,6 +29,12 @@ std::string demangle(const std::string& mangled_name)
         llvm::dbgs() << "Failed to demangle the name " << mangled_name << "\n";
     }
     return std::string();
+}
+
+size_t get_hash_of_string(const std::string& str)
+{
+    boost::hash<std::string> string_hash;
+    return string_hash(str);
 }
 
 }
@@ -76,7 +83,6 @@ CallPathsAnalysisPass::CallPathsAnalysisPass()
 
 bool CallPathsAnalysisPass::doFinalization(llvm::Module& M)
 {
-    llvm::dbgs() << "doFinalization\n";
     //compute_hashes();
     dump();
     intermediate_sensitive_functions.clear();
@@ -136,6 +142,13 @@ void CallPathsAnalysisPass::getAnalysisUsage(llvm::AnalysisUsage& AU) const
     AU.addPreserved<llvm::CallGraphWrapperPass>();
 }
 
+const CallPathsAnalysisPass::hash_set& CallPathsAnalysisPass::get_function_call_path_hashes(llvm::Function* F) const
+{
+    auto pos = path_hashes.find(F);
+    assert(pos != path_hashes.end());
+    return pos->second;
+}
+
 void CallPathsAnalysisPass::dump()
 {
     //flatten_paths();
@@ -150,7 +163,7 @@ void CallPathsAnalysisPass::dump()
         }
         llvm::dbgs() << "Function " << item.first->getName() << "\n";
         dump(paths);
-        llvm::dbgs() << "Hashes:\n";
+        llvm::dbgs() << "Valid hashes:\n";
         for (const auto& hash : path_hashes[item.first]) {
             llvm::dbgs() << hash << "   ";
         }
@@ -168,7 +181,6 @@ void CallPathsAnalysisPass::collect_sensitive_functions(llvm::Module& M)
             intermediate_sensitive_functions.insert(std::make_pair(&F, f_node));
         }
     }
-    llvm::dbgs() << "doInitialization\n";
 }
 
 bool CallPathsAnalysisPass::is_sensitive(llvm::Function* F) const
@@ -210,7 +222,7 @@ size_t CallPathsAnalysisPass::compute_hash(const CallPath& path) const
     size_t hash = 0;
     for (const auto& f : path) {
         const std::string& fname = f->getName();
-        hash ^= std::hash<std::string>()(fname);
+        hash ^= get_hash_of_string(fname);
     }
     return hash;
 }

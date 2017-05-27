@@ -20,9 +20,6 @@ public:
 
     virtual void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
     virtual bool runOnFunction(llvm::Function &F) override;
-
-private:
-    FunctionsAnnotatorPass* functions_annotator;
 };
 
 }

@@ -18,10 +18,10 @@ bool FunctionsAnnotatorPass::runOnModule(llvm::Module &M)
     annotate(M);
     for (auto& F : M) {
         if (F.hasFnAttribute("protected")) {
-            llvm::errs() << "Protected\n";
+            //llvm::errs() << "Protected\n";
             annotated_functions.insert(&F);
         } else {
-            llvm::errs() << "Not Protected\n";
+            //llvm::errs() << "Not Protected\n";
         }
     }
 

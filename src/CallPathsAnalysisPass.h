@@ -20,6 +20,7 @@ class CallPathsAnalysisPass : public llvm::ModulePass
 public:
     using CallPath = std::list<llvm::Function*>;
     using CallPaths = std::vector<CallPath>;
+    using hash_set = std::unordered_set<size_t>;
 
 public:
     class node;
@@ -54,6 +55,9 @@ public:
     bool runOnModule(llvm::Module& M) override;
     void getAnalysisUsage(llvm::AnalysisUsage& AU) const override;
 
+
+public:
+    const hash_set& get_function_call_path_hashes(llvm::Function* F) const;
     void dump();
 
 private:
@@ -69,7 +73,6 @@ private:
     std::unordered_map<llvm::Function*, CallPaths> flattened_paths;
 
     std::unordered_map<llvm::Function*, node_type> intermediate_sensitive_functions;
-    using hash_set = std::unordered_set<size_t>;
     std::unordered_map<llvm::Function*, hash_set> path_hashes;
 
 };
