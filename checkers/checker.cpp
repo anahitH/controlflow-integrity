@@ -36,6 +36,7 @@ size_t get_path_hash(std::string module_name, char** path, int size)
             continue;
         }
         const std::string& function = call_str.substr(first_par + 1, offset_pos - first_par - 1);
+        printf("%s\n", function.c_str());
         hash ^= get_hash_of_string(function);
         //std::hash<std::string>()(function);
     }

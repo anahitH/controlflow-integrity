@@ -2,7 +2,6 @@ add_library(controlflow-integrity MODULE
     CallPathsAnalysisPass.cpp
     ControlFlowIntegrityCheckerPass.cpp
     FunctionsAnnotatorPass.cpp
-    TestModulePass.cpp
     PassRegistration.cpp
 )
 
