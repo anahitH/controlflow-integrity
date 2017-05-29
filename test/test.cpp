@@ -10,7 +10,6 @@ void calc() {
 }
 
 void notify() {
-
 }
 
 PROTECTED

@@ -65,6 +65,7 @@ int check(char* module_name, int count, ...) {
         size_t hash = va_arg(args_list, size_t);
         if (current_hash == hash) {
             is_valid_path = true;
+            break;
         }
     }
     if (!is_valid_path) {

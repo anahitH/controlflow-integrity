@@ -1,0 +1,24 @@
+digraph "Call graph" {
+	label="Call graph";
+
+        Node0x634d2c0 [shape=record,label="{display}"];
+	Node0x6362a20 [shape=record,label="{encrypt}"];
+	Node0x6362a20 -> Node0x6362860;
+	Node0x6362680 [shape=record,label="{calc}"];
+	Node0x6362750 [shape=record,label="{notify}"];
+	Node0x6362860 [shape=record,label="{readKey}"];
+	Node0x6362ad0 [shape=record,label="{decrypt}"];
+	Node0x6362ad0 -> Node0x6362860;
+	Node0x6362b80 [shape=record,label="{loadUI}"];
+	Node0x6362b80 -> Node0x634d2c0;
+	Node0x6362910 [shape=record,label="{operation1}"];
+	Node0x6362910 -> Node0x6362680;
+	Node0x6362910 -> Node0x6362750;
+	Node0x6362e10 [shape=record,label="{operation2}"];
+	Node0x6362e10 -> Node0x6362a20;
+	Node0x6362e10 -> Node0x6362ad0;
+	Node0x6362ee0 [shape=record,label="{main}"];
+	Node0x6362ee0 -> Node0x6362b80;
+	Node0x6362ee0 -> Node0x6362910;
+	Node0x6362ee0 -> Node0x6362e10;
+}
