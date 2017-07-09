@@ -1,0 +1,33 @@
+# controlflow-integrity
+
+
+# To build the tool:
+	mkdir build
+	cd build
+	cmake ../
+	make
+
+
+# Setting functions as protected: To mark a function as protected, define the following macro in your source code:
+
+  #define PROTECTED __attribute__((annotate("protected")))
+
+And then before each sensitive function, insert PROTECTED.
+
+For example, if you want to protect the following function:
+
+PROTECTED
+void superSecret() {
+  // Super Secret
+}
+
+# To run the tool
+
+dump llvm bitcode for further instrumentation
+  clang++ -std=c++0x source.cpp -c -emit-llvm
+link bitcode from the previous step with the bitcode of external library containing an integrity checker function. The external library is already built to bitcode and is located in checkers directory.
+  llvm-link source.bc checker.bc -o out.bc 
+Run llvm transformation pass to add checkers into each sensitive function
+  opt -load ${BUILD_DIR}/build/lib/libcontrolflow-integrity.so out.bc -cf-integrity -o out.bc
+Compile resulting bitcode into a binary
+  clang++ -rdynamic -std=c++0x  out.bc -o out
