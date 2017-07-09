@@ -42,7 +42,7 @@ bool ControlFlowIntegrityCheckerPass::runOnFunction(llvm::Function &F)
 
     llvm::BasicBlock &bb = F.getEntryBlock();
     llvm::IRBuilder<> builder(&bb);
-    builder.SetInsertPoint(&bb, --builder.GetInsertPoint());
+    builder.SetInsertPoint(&bb, ++builder.GetInsertPoint());
 
     std::vector<llvm::Value*> arg_values;
     const auto& hashes = call_paths_analysis.get_function_call_path_hashes(&F);

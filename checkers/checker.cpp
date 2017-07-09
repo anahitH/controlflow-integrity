@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <boost/functional/hash.hpp>
+#include <unordered_set>
 
 size_t get_hash_of_string(const std::string& str)
 {
@@ -20,6 +21,7 @@ size_t get_path_hash(std::string module_name, char** path, int size)
         module_name = module_name.substr(0, postfix_pos);
         module_name += '(';
     }
+    std::unordered_set<std::string> processed;
     size_t hash = 0;
     // start from second function, as the first will be check and the second will be get_path_hash
     for (unsigned i = 1; i < size; ++i) {
@@ -36,11 +38,14 @@ size_t get_path_hash(std::string module_name, char** path, int size)
             continue;
         }
         const std::string& function = call_str.substr(first_par + 1, offset_pos - first_par - 1);
-        printf("%s\n", function.c_str());
+        if (!processed.insert(function).second) {
+            continue;
+        }
+        //printf("%s\n", function.c_str());
         hash ^= get_hash_of_string(function);
         //std::hash<std::string>()(function);
     }
-    printf("call Hash %lu \n", hash);
+    //printf("call Hash %lu \n", hash);
     return hash;
 }
 

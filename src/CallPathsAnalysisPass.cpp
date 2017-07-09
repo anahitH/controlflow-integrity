@@ -44,14 +44,53 @@ CallPathsAnalysisPass::node::node(llvm::Function* f)
 {
 }
 
-void CallPathsAnalysisPass::node::add_parent(const node_type& parent)
+llvm::Function* CallPathsAnalysisPass::node::get_function() const
 {
-    parents.push_back(parent);
+    return node_f;
+}
+
+void CallPathsAnalysisPass::node::add_parent(node_type parent)
+{
+    if (node_f == parent->get_function()) {
+        return;
+    } else if (has_parent(parent->get_function())) {
+        return;
+    }
+
+    bool has_cycle = false;
+    std::list<node_type> g_parents;
+    g_parents.insert(g_parents.begin(), parent->get_parents().begin(), parent->get_parents().end());
+    while (!g_parents.empty()) {
+        const auto& g_p = g_parents.back();
+        g_parents.pop_back();
+        if (g_p->get_function() == node_f) {
+            has_cycle = true;
+            break;
+        } else if (g_p->has_parent(node_f)) {
+            has_cycle = true;
+            break;
+        }
+        auto gparents = g_p->get_parents();
+        g_parents.insert(g_parents.begin(), gparents.begin(), gparents.end());
+    }
+    if (!has_cycle) {
+        parents.push_back(parent);
+    }
 }
 
 const CallPathsAnalysisPass::node::node_parents& CallPathsAnalysisPass::node::get_parents() const
 {
     return parents;
+}
+
+bool CallPathsAnalysisPass::node::has_parent(llvm::Function* parent) const
+{
+    for (const auto& p : parents) {
+        if (p->get_function() == parent) {
+            return true;
+        }
+    }
+    return false;
 }
 
 CallPathsAnalysisPass::CallPaths CallPathsAnalysisPass::node::get_flattened_paths()

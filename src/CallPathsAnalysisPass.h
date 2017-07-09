@@ -34,8 +34,11 @@ public:
     public:
         node(llvm::Function* f);
 
-        void add_parent(const node_type& parent);
+        llvm::Function* get_function() const;
+
+        void add_parent(node_type parent);
         const node_parents& get_parents() const;
+        bool has_parent(llvm::Function* F) const;
 
         CallPaths get_flattened_paths();
 
