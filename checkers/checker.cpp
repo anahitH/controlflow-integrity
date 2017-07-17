@@ -1,6 +1,5 @@
 #include <iostream>
 #include <cstdarg>
-#include <unordered_set>
 
 #include <execinfo.h>
 #include <unistd.h>
@@ -8,6 +7,7 @@
 
 #include <boost/functional/hash.hpp>
 #include <unordered_set>
+#include <string>
 
 
 #define UNW_LOCAL_ONLY
@@ -49,6 +49,11 @@ call_path::call_path()
 
         char sym[256];
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
+            std::string f_name = std::string(sym);
+            auto dyninst_pos = f_name.find("_dyninst");
+            if (dyninst_pos != std::string::npos) {
+                f_name = f_name.substr(0, dyninst_pos);
+            }
             m_path.push_back(std::string(sym));
         }
     }
