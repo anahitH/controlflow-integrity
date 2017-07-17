@@ -49,7 +49,12 @@ call_path::call_path()
 
         char sym[256];
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
-            m_path.push_back(std::string(sym));
+            std::string f_name = std::string(sym);
+            auto dyninst_pos = f_name.find("_dyninst");
+            if (dyninst_pos != std::string::npos) {
+                f_name = f_name.substr(0, dyninst_pos);
+            }
+            m_path.push_back(f_name);
         }
     }
 }
