@@ -23,7 +23,7 @@ class call_path
 public:
     call_path();
 
-    size_t compute_hash(std::string module_name, char** path, int size);
+    size_t compute_hash(char** path, int size);
 
 private:
     std::vector<std::string> m_path;
@@ -59,26 +59,20 @@ call_path::call_path()
     }
 }
 
-size_t call_path::compute_hash(std::string module_name, char** path, int size)
+size_t call_path::compute_hash(char** path, int size)
 {
-    auto postfix_pos = module_name.find_first_of('.');
-    if (postfix_pos != std::string::npos) {
-        module_name = module_name.substr(0, postfix_pos);
-        module_name += '(';
-    }
     std::unordered_set<std::string> processed;
     size_t hash = 0;
     // start from second function, as the first will be check and the second will be get_path_hash
     for (unsigned i = 1; i < size; ++i) {
-        std::string call_str = path[i];
-        if (call_str.find(module_name) == std::string::npos) {
-            break;
-        }
         std::string function = m_path[i];
         if (!processed.insert(function).second) {
             continue;
         }
         hash ^= get_hash_of_string(function);
+        if (function == "main") {
+            break;
+        }
         //std::hash<std::string>()(function);
     }
     //printf("call Hash %lu \n", hash);
@@ -98,7 +92,7 @@ int check(char* module_name, int count, ...) {
     if (strings == nullptr) {
         abort();
     }
-    size_t current_hash = current_path.compute_hash(std::string(module_name), strings, size);
+    size_t current_hash = current_path.compute_hash(strings, size);
     free(strings);
     //backtrace_symbols_fd(array, size, STDOUT_FILENO);
 
