@@ -35,7 +35,7 @@ bool ControlFlowIntegrityCheckerPass::runOnFunction(llvm::Function &F)
 
     // Get the function to call from our runtime library.
     llvm::LLVMContext &Ctx = F.getContext();
-    llvm::ArrayRef<llvm::Type*> params{llvm::Type::getInt8PtrTy(Ctx), llvm::Type::getInt32Ty(Ctx)};
+    llvm::ArrayRef<llvm::Type*> params{llvm::Type::getInt32Ty(Ctx)};
     llvm::FunctionType* function_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(Ctx), params, true);
     llvm::Constant *checkFunc = F.getParent()->getOrInsertFunction(
             "check", function_type);
@@ -46,8 +46,6 @@ bool ControlFlowIntegrityCheckerPass::runOnFunction(llvm::Function &F)
 
     std::vector<llvm::Value*> arg_values;
     const auto& hashes = call_paths_analysis.get_function_call_path_hashes(&F);
-    llvm::Value *strPtr = builder.CreateGlobalStringPtr(F.getParent()->getName(), "module_name");
-    arg_values.push_back(strPtr);
     arg_values.push_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(Ctx), hashes.size()));
     for (const auto& hash : hashes) {
         arg_values.push_back(llvm::ConstantInt::get(llvm::Type::getInt64Ty(Ctx), hash));

@@ -3,14 +3,16 @@
 
 #include <execinfo.h>
 #include <unistd.h>
+
+#define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
 #include <boost/functional/hash.hpp>
 #include <unordered_set>
 #include <string>
 
-
-#define UNW_LOCAL_ONLY
+#include <unordered_map>
+#include <chrono>
 
 size_t get_hash_of_string(const std::string& str)
 {
@@ -18,34 +20,57 @@ size_t get_hash_of_string(const std::string& str)
     return string_hash(str);
 }
 
-class call_path
+
+class call_stack_mgr
 {
 public:
-    call_path();
+    static call_stack_mgr& get()
+    {
+        static call_stack_mgr mgr;
+        return mgr;
+    }
 
-    size_t compute_hash(std::string module_name, char** path, int size);
+public:
+    size_t get_stack_hash();
 
 private:
-    std::vector<std::string> m_path;
+    std::unordered_map<unw_word_t, std::string> function_addresses;
 };
 
-call_path::call_path()
+size_t call_stack_mgr::get_stack_hash()
 {
+    size_t hash = 0;
     char name[256];
     unw_cursor_t cursor;
     unw_context_t uc;
-    unw_word_t ip, sp, offp;
 
     unw_getcontext (&uc);
     unw_init_local (&cursor, &uc);
 
-    while (unw_step(&cursor) > 0)
-    {
+    std::unordered_set<unw_word_t> processed;
+    while (unw_step(&cursor) > 0) {
         unw_word_t offset, pc;
         unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (pc == 0) {
             break;
         }
+        if (!processed.insert(pc).second) {
+            continue;
+        }
+        //printf("0x%lx:\n", pc);
+        auto name_pos = function_addresses.find(pc);
+        if (name_pos != function_addresses.end()) {
+            if (name_pos->second == "check") {
+                continue;
+            }
+            hash ^= get_hash_of_string(name_pos->second);
+            //printf("use existing name %s\n", name_pos->second.c_str());
+            if (name_pos->second == "main") {
+                break;
+            }
+            continue;
+        }
+        //printf("no existing name. get from stack\n");
 
         char sym[256];
         if (unw_get_proc_name(&cursor, sym, sizeof(sym), &offset) == 0) {
@@ -54,54 +79,27 @@ call_path::call_path()
             if (dyninst_pos != std::string::npos) {
                 f_name = f_name.substr(0, dyninst_pos);
             }
-            m_path.push_back(std::string(sym));
+            function_addresses.insert(std::make_pair(pc, f_name));
+            if (f_name == "check") {
+                continue;
+            }
+            hash ^= get_hash_of_string(f_name);
+            if (f_name == "main") {
+                break;
+            }
         }
     }
-}
-
-size_t call_path::compute_hash(std::string module_name, char** path, int size)
-{
-    auto postfix_pos = module_name.find_first_of('.');
-    if (postfix_pos != std::string::npos) {
-        module_name = module_name.substr(0, postfix_pos);
-        module_name += '(';
-    }
-    std::unordered_set<std::string> processed;
-    size_t hash = 0;
-    // start from second function, as the first will be check and the second will be get_path_hash
-    for (unsigned i = 1; i < size; ++i) {
-        std::string call_str = path[i];
-        if (call_str.find(module_name) == std::string::npos) {
-            break;
-        }
-        std::string function = m_path[i];
-        if (!processed.insert(function).second) {
-            continue;
-        }
-        hash ^= get_hash_of_string(function);
-        //std::hash<std::string>()(function);
-    }
-    //printf("call Hash %lu \n", hash);
     return hash;
 }
 
 extern "C" {
 
-int check(char* module_name, int count, ...) {
-    call_path current_path;
-    void *array[100];
-    size_t size;
-    size = backtrace(array, 100);
+size_t previous_path_hash;
 
-    char** strings;
-    strings = backtrace_symbols(array, size);
-    if (strings == nullptr) {
-        abort();
-    }
-    size_t current_hash = current_path.compute_hash(std::string(module_name), strings, size);
-    free(strings);
-    //backtrace_symbols_fd(array, size, STDOUT_FILENO);
-
+int check(int count, ...)
+{
+    call_stack_mgr& mgr = call_stack_mgr::get();
+    size_t current_hash = mgr.get_stack_hash();
     bool is_valid_path = false;
     va_list args_list;
     va_start(args_list, count);
@@ -113,7 +111,7 @@ int check(char* module_name, int count, ...) {
         }
     }
     if (!is_valid_path) {
-        printf("Untrusted call path\n");
+        printf("Untrusted call path. Current hash %zu\n", current_hash);
         abort();
     }
     return 0;
