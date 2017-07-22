@@ -46,20 +46,20 @@ size_t call_stack_mgr::get_stack_hash()
     unw_getcontext (&uc);
     unw_init_local (&cursor, &uc);
 
-    std::unordered_set<unw_word_t> processed;
+    std::unordered_set<std::string> processed;
     while (unw_step(&cursor) > 0) {
         unw_word_t offset, pc;
         unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (pc == 0) {
             break;
         }
-        if (!processed.insert(pc).second) {
-            continue;
-        }
         //printf("0x%lx:\n", pc);
         auto name_pos = function_addresses.find(pc);
         if (name_pos != function_addresses.end()) {
             if (name_pos->second == "check") {
+                continue;
+            }
+            if (!processed.insert(name_pos->second).second) {
                 continue;
             }
             hash ^= get_hash_of_string(name_pos->second);
@@ -79,7 +79,11 @@ size_t call_stack_mgr::get_stack_hash()
                 f_name = f_name.substr(0, dyninst_pos);
             }
             function_addresses.insert(std::make_pair(pc, f_name));
+            //printf("%s\n", f_name.c_str());
             if (f_name == "check") {
+                continue;
+            }
+            if (!processed.insert(f_name).second) {
                 continue;
             }
             hash ^= get_hash_of_string(f_name);
