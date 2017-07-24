@@ -30,16 +30,17 @@ public:
     }
 
 public:
-    size_t get_stack_hash();
+    size_t get_stack_hash(bool *callStackFail);
 
 private:
     std::unordered_map<unw_word_t, std::string> function_addresses;
 };
 
-size_t call_stack_mgr::get_stack_hash()
+size_t call_stack_mgr::get_stack_hash(bool *callStackFail)
 {
     size_t hash = 0;
     char name[256];
+    int resp = 10;
     unw_cursor_t cursor;
     unw_context_t uc;
 
@@ -47,10 +48,11 @@ size_t call_stack_mgr::get_stack_hash()
     unw_init_local (&cursor, &uc);
 
     std::unordered_set<std::string> processed;
-    while (unw_step(&cursor) > 0) {
+    while ((resp = unw_step(&cursor)) > 0) {
         unw_word_t offset, pc;
         unw_get_reg(&cursor, UNW_REG_IP, &pc);
         if (pc == 0) {
+            //printf("pc\n");
             break;
         }
         //printf("0x%lx:\n", pc);
@@ -62,6 +64,7 @@ size_t call_stack_mgr::get_stack_hash()
             if (!processed.insert(name_pos->second).second) {
                 continue;
             }
+            //printf("\tsaved\t%s\n", name_pos->second.c_str());
             hash ^= get_hash_of_string(name_pos->second);
             //printf("use existing name %s\n", name_pos->second.c_str());
             if (name_pos->second == "main") {
@@ -79,18 +82,21 @@ size_t call_stack_mgr::get_stack_hash()
                 f_name = f_name.substr(0, dyninst_pos);
             }
             function_addresses.insert(std::make_pair(pc, f_name));
-            //printf("%s\n", f_name.c_str());
             if (f_name == "check") {
                 continue;
             }
             if (!processed.insert(f_name).second) {
                 continue;
             }
+            //printf("\tfirst\t%s\n", f_name.c_str());
             hash ^= get_hash_of_string(f_name);
             if (f_name == "main") {
                 break;
             }
         }
+    }
+    if (resp <= 0) {
+        *callStackFail = true;
     }
     return hash;
 }
@@ -101,8 +107,12 @@ size_t previous_path_hash;
 
 int check(int count, ...)
 {
+    bool callStackFail = false;
     call_stack_mgr& mgr = call_stack_mgr::get();
-    size_t current_hash = mgr.get_stack_hash();
+    size_t current_hash = mgr.get_stack_hash(&callStackFail);
+    if (callStackFail) {
+        return 0;
+    }
     bool is_valid_path = false;
     va_list args_list;
     va_start(args_list, count);

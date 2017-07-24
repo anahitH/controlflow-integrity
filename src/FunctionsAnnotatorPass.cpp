@@ -2,6 +2,7 @@
 
 #include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
@@ -15,10 +16,11 @@ char FunctionsAnnotatorPass::ID = 0;
 
 bool FunctionsAnnotatorPass::runOnModule(llvm::Module &M)
 {
+    llvm::dbgs() << "PASS\n";
     annotate(M);
     for (auto& F : M) {
         if (F.hasFnAttribute("protected")) {
-            //llvm::errs() << "Protected\n";
+            llvm::dbgs() << "Add sensitive function " << F.getName() << "\n";
             annotated_functions.insert(&F);
         } else {
             //llvm::errs() << "Not Protected\n";
